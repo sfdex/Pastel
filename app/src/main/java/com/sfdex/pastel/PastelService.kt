@@ -13,6 +13,7 @@ class PastelService : VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val builder = Builder()
         builder.apply {
+            setMtu(1500)
             addAddress("192.168.2.2", 24)
             addRoute("0.0.0.0", 0)
             addDnsServer("192.168.1.1")
