@@ -15,6 +15,7 @@ Java_com_sfdex_tun2socks_Tun2Socks_main(JNIEnv *env, jobject thiz, jint fd, jstr
     tun2socks(fd, env->GetStringUTFChars(log_path, NULL));
 }
 
+/*
 extern "C" JNIEXPORT jint JNICALL
 Java_com_sfdex_tun2socks_Tun2Socks_testNum(JNIEnv *env, jobject thiz, jint fd) {
     return test_num(fd);
@@ -31,4 +32,4 @@ Java_com_sfdex_tun2socks_Tun2Socks_testStrWithLen(JNIEnv *env, jobject thiz, jst
                                                   jint len) {
     const char *result = test_cstr_with_len(env->GetStringUTFChars(str, NULL), len);
     return env->NewStringUTF(result);
-}
+}*/

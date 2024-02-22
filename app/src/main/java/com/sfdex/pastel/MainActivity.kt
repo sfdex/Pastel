@@ -67,33 +67,6 @@ fun Greeting(name: String, context: Activity, modifier: Modifier = Modifier) {
         }
 
         Button(onClick = {
-            tun2Socks.main(0, "80")
-        }) {
-            Text(text = "Main")
-        }
-
-        Button(onClick = {
-            val num = tun2Socks.testNum(1001)
-            Log.d(TAG, "testNum: $num")
-        }) {
-            Text(text = "testNum")
-        }
-
-        Button(onClick = {
-            val str = tun2Socks.testStr("/sdcard/")
-            Log.d(TAG, "testCStr: $str")
-        }) {
-            Text(text = "testStr")
-        }
-
-        Button(onClick = {
-            val str = tun2Socks.testStrWithLen("/sdcard/", 8)
-            Log.d(TAG, "testCStrWithLen: $str")
-        }) {
-            Text(text = "testStrWithLen")
-        }
-
-        Button(onClick = {
             val intent = VpnService.prepare(context)
             if (intent != null) {
                 context.startActivityForResult(intent, 0)
@@ -102,6 +75,12 @@ fun Greeting(name: String, context: Activity, modifier: Modifier = Modifier) {
             }
         }) {
             Text(text = "startService")
+        }
+
+        Button(onClick = {
+            context.stopService(Intent(context, PastelService::class.java))
+        }) {
+            Text(text = "StopService")
         }
     }
 }
