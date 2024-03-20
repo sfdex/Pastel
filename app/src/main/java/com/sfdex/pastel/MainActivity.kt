@@ -1,7 +1,6 @@
 package com.sfdex.pastel
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
@@ -71,14 +70,22 @@ fun Greeting(name: String, context: Activity, modifier: Modifier = Modifier) {
             if (intent != null) {
                 context.startActivityForResult(intent, 0)
             } else {
-                context.startService(Intent(context, PastelService::class.java))
+                context.startService(
+                    Intent(context, PastelService::class.java).setAction(
+                        ACTION_CONNECT
+                    )
+                )
             }
         }) {
             Text(text = "startService")
         }
 
         Button(onClick = {
-            context.stopService(Intent(context, PastelService::class.java))
+            context.startService(
+                Intent(context, PastelService::class.java).setAction(
+                    ACTION_DISCONNECT
+                )
+            )
         }) {
             Text(text = "StopService")
         }
