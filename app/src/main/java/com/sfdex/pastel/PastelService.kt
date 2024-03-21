@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.net.VpnService
 import android.os.Build
+import android.os.ParcelFileDescriptor
 import android.util.Log
 import android.widget.Toast
 import com.sfdex.tun2socks.Tun2Socks
@@ -17,6 +18,7 @@ const val ACTION_DISCONNECT = "com.sfdex.pastel.disconnect"
 
 class PastelService : VpnService() {
     private var connectionThread: Thread? = null
+    private var parcelFileDescriptor: ParcelFileDescriptor? = null
     private lateinit var pendingIntent: PendingIntent
 
     override fun onCreate() {
@@ -43,18 +45,22 @@ class PastelService : VpnService() {
             val builder = Builder()
             builder.apply {
                 setMtu(1500)
-                addAddress("10.0.0.1", 24)
                 addRoute("0.0.0.0", 0)
-                addDnsServer("192.168.1.1")
+                addAddress("192.168.2.1", 30)
+                addDnsServer("192.168.2.2")
                 addAllowedApplication("com.sfdex.net")
             }
 
-            val localTunnel = builder.establish()
-            if (localTunnel != null) {
-                Log.d(TAG, "established fd: ${localTunnel.fd}")
+            parcelFileDescriptor = builder.establish()
+            if (parcelFileDescriptor != null) {
+                val isProtect = protect(parcelFileDescriptor!!.fd)
+                Log.d(TAG, "isProtect: $isProtect")
+                Log.d(TAG, "established fd: ${parcelFileDescriptor!!.fd}")
                 val logPath = "${filesDir.absolutePath}/hello.txt"
                 Log.d(TAG, "logPath: $logPath")
-                Tun2Socks().main(localTunnel.fd, logPath)
+                Log.d(TAG, "tun2socks start")
+                Tun2Socks().main(parcelFileDescriptor!!.fd, logPath)
+                Log.d(TAG, "tun2socks end")
             }
         }
 
@@ -64,8 +70,22 @@ class PastelService : VpnService() {
 
     private fun disconnect() {
         updateNotification("Disconnected")
-        connectionThread?.interrupt()
-        connectionThread = null
+        try {
+            connectionThread?.apply {
+                Log.d(TAG, "disconnect: isAlive? $isAlive")
+                Log.d(TAG, "disconnect: isDaemon? $isDaemon")
+            }
+            connectionThread?.interrupt()
+            parcelFileDescriptor?.close()
+            connectionThread?.apply {
+                Log.d(TAG, "disconnect: isAlive? $isAlive")
+                Log.d(TAG, "disconnect: isDaemon? $isDaemon")
+            }
+//            stopSelf()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         stopForeground(STOP_FOREGROUND_REMOVE)
     }
 
@@ -102,6 +122,13 @@ class PastelService : VpnService() {
         super.onRevoke()
         Log.d(TAG, "onRevoke: ")
         Toast.makeText(this, "Pastel ended 2", Toast.LENGTH_SHORT).show()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "onDestroy: ")
+        connectionThread = null
+        parcelFileDescriptor = null
     }
 }
 
