@@ -71,22 +71,22 @@ class PastelService : VpnService() {
     private fun disconnect() {
         updateNotification("Disconnected")
         try {
-            connectionThread?.apply {
-                Log.d(TAG, "disconnect: isAlive? $isAlive")
-                Log.d(TAG, "disconnect: isDaemon? $isDaemon")
-            }
-            connectionThread?.interrupt()
             parcelFileDescriptor?.close()
-            connectionThread?.apply {
-                Log.d(TAG, "disconnect: isAlive? $isAlive")
-                Log.d(TAG, "disconnect: isDaemon? $isDaemon")
-            }
-//            stopSelf()
+            connectionThread?.interrupt()
         } catch (e: Exception) {
             e.printStackTrace()
-        }
+        } finally {
+            connectionThread?.apply {
+                Log.d(TAG, "disconnect: isAlive? $isAlive")
+                Log.d(TAG, "disconnect: isDaemon? $isDaemon")
+            }
+            parcelFileDescriptor = null
+            connectionThread = null
 
-        stopForeground(STOP_FOREGROUND_REMOVE)
+            Toast.makeText(this, "Tun2socks end", Toast.LENGTH_SHORT).show()
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
     }
 
     private fun updateNotification(msg: String) {
@@ -121,14 +121,12 @@ class PastelService : VpnService() {
     override fun onRevoke() {
         super.onRevoke()
         Log.d(TAG, "onRevoke: ")
-        Toast.makeText(this, "Pastel ended 2", Toast.LENGTH_SHORT).show()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "onDestroy: ")
-        connectionThread = null
-        parcelFileDescriptor = null
+        disconnect()
     }
 }
 
