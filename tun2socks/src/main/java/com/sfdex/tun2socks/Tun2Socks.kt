@@ -9,6 +9,8 @@ class Tun2Socks {
     external fun stringFromJNI(): String
 
     external fun main(fd: Int, logPath: String)
+
+    external fun stop()
     /*external fun testNum(fd: Int): Int
     external fun testStr(logPath: String): String
     external fun testStrWithLen(str: String, len: Int): String*/

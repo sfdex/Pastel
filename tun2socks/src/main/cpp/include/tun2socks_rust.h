@@ -6,6 +6,7 @@
 #define PASTEL_TUN2SOCKS_RUST_H
 
 extern "C" void tun2socks(int fd, const char *log_path);
+extern "C" void stop();
 /*extern "C" {
 int test_num(int fd);
 const char *test_cstr(const char *log_path);

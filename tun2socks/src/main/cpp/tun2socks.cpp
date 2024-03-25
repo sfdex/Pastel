@@ -15,6 +15,11 @@ Java_com_sfdex_tun2socks_Tun2Socks_main(JNIEnv *env, jobject thiz, jint fd, jstr
     tun2socks(fd, env->GetStringUTFChars(log_path, NULL));
 }
 
+extern "C" JNIEXPORT void JNICALL
+Java_com_sfdex_tun2socks_Tun2Socks_stop(JNIEnv *env, jobject thiz) {
+    stop();
+}
+
 /*
 extern "C" JNIEXPORT jint JNICALL
 Java_com_sfdex_tun2socks_Tun2Socks_testNum(JNIEnv *env, jobject thiz, jint fd) {

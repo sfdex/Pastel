@@ -19,6 +19,9 @@ const val ACTION_DISCONNECT = "com.sfdex.pastel.disconnect"
 class PastelService : VpnService() {
     private var connectionThread: Thread? = null
     private var parcelFileDescriptor: ParcelFileDescriptor? = null
+    private var tun2socks: Tun2Socks? = null
+
+    private var isRunning = false
     private lateinit var pendingIntent: PendingIntent
 
     override fun onCreate() {
@@ -41,6 +44,8 @@ class PastelService : VpnService() {
     }
 
     private fun connect() {
+        if (isRunning) return
+
         val connectionThread = thread {
             val builder = Builder()
             builder.apply {
@@ -59,7 +64,10 @@ class PastelService : VpnService() {
                 val logPath = "${filesDir.absolutePath}/hello.txt"
                 Log.d(TAG, "logPath: $logPath")
                 Log.d(TAG, "tun2socks start")
-                Tun2Socks().main(parcelFileDescriptor!!.fd, logPath)
+                tun2socks = Tun2Socks()
+                isRunning = true
+                tun2socks?.main(parcelFileDescriptor!!.fd, logPath)
+                isRunning = false
                 Log.d(TAG, "tun2socks end")
             }
         }
@@ -71,6 +79,7 @@ class PastelService : VpnService() {
     private fun disconnect() {
         updateNotification("Disconnected")
         try {
+            tun2socks?.stop()
             parcelFileDescriptor?.close()
             connectionThread?.interrupt()
         } catch (e: Exception) {
@@ -80,11 +89,12 @@ class PastelService : VpnService() {
                 Log.d(TAG, "disconnect: isAlive? $isAlive")
                 Log.d(TAG, "disconnect: isDaemon? $isDaemon")
             }
+            tun2socks = null
             parcelFileDescriptor = null
             connectionThread = null
-
             Toast.makeText(this, "Tun2socks end", Toast.LENGTH_SHORT).show()
             stopForeground(STOP_FOREGROUND_REMOVE)
+            isRunning = false
             stopSelf()
         }
     }
