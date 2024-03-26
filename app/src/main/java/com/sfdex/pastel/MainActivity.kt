@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
 
     private val serviceIntent
         get() =
-            Intent(this, PastelService::class.java)
+            Intent(this, PastelService::class.java).setAction(ACTION_CONNECT)
 }
 
 @Composable
