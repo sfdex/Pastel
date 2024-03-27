@@ -9,7 +9,6 @@ import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
-import android.widget.Toast
 import com.sfdex.tun2socks.Tun2Socks
 import kotlin.concurrent.thread
 
@@ -58,17 +57,14 @@ class PastelService : VpnService() {
 
             parcelFileDescriptor = builder.establish()
             if (parcelFileDescriptor != null) {
-                val isProtect = protect(parcelFileDescriptor!!.fd)
-                Log.d(TAG, "isProtect: $isProtect")
                 Log.d(TAG, "established fd: ${parcelFileDescriptor!!.fd}")
                 val logPath = "${filesDir.absolutePath}/hello.txt"
                 Log.d(TAG, "logPath: $logPath")
-                Log.d(TAG, "tun2socks start")
                 tun2socks = Tun2Socks()
                 isRunning = true
                 tun2socks?.main(parcelFileDescriptor!!.fd, logPath)
                 isRunning = false
-                Log.d(TAG, "tun2socks end")
+                Log.d(TAG, "tun2socks ended")
             }
         }
 
@@ -79,20 +75,14 @@ class PastelService : VpnService() {
     private fun disconnect() {
         updateNotification("Disconnected")
         try {
-            tun2socks?.stop()
             parcelFileDescriptor?.close()
             connectionThread?.interrupt()
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
-            connectionThread?.apply {
-                Log.d(TAG, "disconnect: isAlive? $isAlive")
-                Log.d(TAG, "disconnect: isDaemon? $isDaemon")
-            }
             tun2socks = null
             parcelFileDescriptor = null
             connectionThread = null
-            Toast.makeText(this, "Tun2socks end", Toast.LENGTH_SHORT).show()
             stopForeground(STOP_FOREGROUND_REMOVE)
             isRunning = false
             stopSelf()
@@ -100,15 +90,17 @@ class PastelService : VpnService() {
     }
 
     private fun updateNotification(msg: String) {
-        val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.O) {
-            manager.createNotificationChannel(
-                NotificationChannel(
-                    "Pastel",
-                    "Pastel service",
-                    NotificationManager.IMPORTANCE_DEFAULT
+            val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            if (manager.getNotificationChannel("Pastel") == null) {
+                manager.createNotificationChannel(
+                    NotificationChannel(
+                        "Pastel",
+                        "Pastel service",
+                        NotificationManager.IMPORTANCE_DEFAULT
+                    )
                 )
-            )
+            }
 
             startForeground(
                 1, Notification.Builder(this, "Pastel")
@@ -128,15 +120,9 @@ class PastelService : VpnService() {
         }
     }
 
-    override fun onRevoke() {
-        super.onRevoke()
-        Log.d(TAG, "onRevoke: ")
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "onDestroy: ")
-        disconnect()
     }
 }
 

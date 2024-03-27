@@ -1,103 +1,141 @@
 package com.sfdex.pastel
 
+import android.Manifest
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.sfdex.pastel.ui.theme.PastelTheme
-import com.sfdex.tun2socks.Tun2Socks
-
-lateinit var tun2Socks: Tun2Socks
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            PastelTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Greeting("Android", this)
+    private val activityResultLauncher: ActivityResultLauncher<Intent> =
+        registerForActivityResult(object :
+            ActivityResultContract<Intent, Int>() {
+            override fun createIntent(context: Context, input: Intent): Intent {
+                return input
+            }
+
+            override fun parseResult(resultCode: Int, intent: Intent?): Int {
+                return if (resultCode == Activity.RESULT_OK) {
+                    1
+                } else {
+                    0
                 }
             }
-        }
 
-        tun2Socks = Tun2Socks()
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == RESULT_OK) {
-            startService(serviceIntent)
-        }
-    }
-
-    private val serviceIntent
-        get() =
-            Intent(this, PastelService::class.java).setAction(ACTION_CONNECT)
-}
-
-@Composable
-fun Greeting(name: String, context: Activity, modifier: Modifier = Modifier) {
-    Column {
-        Text(
-            text = "Hello $name!",
-            modifier = modifier
-        )
-        Button(onClick = {
-            val str = tun2Socks.stringFromJNI()
-            Log.d(TAG, "Tun2Socks::stringFromJNI: $str")
         }) {
-            Text(text = "HelloJNI")
-        }
-
-        Button(onClick = {
-            val intent = VpnService.prepare(context)
-            if (intent != null) {
-                context.startActivityForResult(intent, 0)
-            } else {
-                context.startService(
-                    Intent(context, PastelService::class.java).setAction(
+            if (it > 0) {
+                startService(
+                    Intent(this, PastelService::class.java).setAction(
                         ACTION_CONNECT
                     )
                 )
             }
-        }) {
-            Text(text = "startService")
         }
 
-        Button(onClick = {
-            context.startService(
-                Intent(context, PastelService::class.java).setAction(
-                    ACTION_DISCONNECT
-                )
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            PastelTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    UI(this)
+                }
+            }
+        }
+
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
+        }
+    }
+
+    fun startSvc() {
+        VpnService.prepare(this)?.let {
+            activityResultLauncher.launch(it)
+            return
+        }
+
+        startService(
+            Intent(this, PastelService::class.java).setAction(
+                ACTION_CONNECT
             )
-        }) {
-            Text(text = "StopService")
+        )
+    }
+
+    fun stopSvc() {
+        startService(
+            Intent(this, PastelService::class.java).setAction(
+                ACTION_DISCONNECT
+            )
+        )
+    }
+}
+
+@Composable
+fun UI(activity: MainActivity) {
+    Box {
+        Text(
+            text = "Pastel",
+            style = TextStyle(fontSize = 20.sp),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 20.dp)
+        )
+        Column(modifier = Modifier.align(Alignment.BottomCenter)) {
+            Button(
+                modifier = Modifier.width(90.dp),
+                onClick = { activity.startSvc() }) {
+                Text(text = "Start")
+            }
+
+            Button(
+                modifier = Modifier
+                    .width(90.dp)
+                    .padding(top = 20.dp, bottom = 30.dp),
+                onClick = { activity.stopSvc() }) {
+                Text(text = "Stop")
+            }
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
+fun UiPreview() {
     PastelTheme {
-//        Greeting("Android")
+        // A surface container using the 'background' color from the theme
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            UI(MainActivity())
+        }
     }
 }
-
-private const val TAG = "MainActivity"
